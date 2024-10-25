@@ -16,15 +16,32 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential flex bison dwarves libssl-dev libelf-dev bc tzdata python3
+          sudo apt-get install -y build-essential flex bison dwarves libssl-dev libelf-dev bc tzdata python3 cpio
       - name: Build steps
         run: |
-          uname -a
+          # Copy the base configuration file
           cp Microsoft/config-wsl .config
+          
+          # Enable Bluetooth and RFKill
           ./scripts/config --enable CONFIG_BT
           ./scripts/config --enable CONFIG_BT_HCIBTUSB
           ./scripts/config --enable CONFIG_RFKILL
+
+          # Enable required USB and USB/IP configurations
+          ./scripts/config --enable CONFIG_USB_SUPPORT
+          ./scripts/config --enable CONFIG_USB_ANNOUNCE_NEW_DEVICES
+          ./scripts/config --enable CONFIG_USB_ACM
+          ./scripts/config --enable CONFIG_USB_IP_COMMON
+          ./scripts/config --enable CONFIG_USB_IP_VHCI_HCD
+
+          # Enable USB Serial Converter and FTDI Serial Driver
+          ./scripts/config --enable CONFIG_USB_SERIAL
+          ./scripts/config --enable CONFIG_USB_SERIAL_FTDI_SIO
+
+          # Finalize config with defaults for missing options
           make olddefconfig
+          
+          # Build kernel and modules
           make -j $(nproc)
           sudo make modules_install -j $(nproc)
           sudo make install -j $(nproc)
